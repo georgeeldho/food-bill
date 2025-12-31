@@ -2,18 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Food Event POS - ₹</title>
     <style>
         :root { --primary: #27ae60; --danger: #e74c3c; --dark: #2c3e50; --bg: #f4f7f6; }
         
-        html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); font-family: -apple-system, sans-serif; }
+        html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); font-family: -apple-system, sans-serif;padding-bottom: env(safe-area-inset-bottom);  }
         
         .container { display: flex; flex-direction: column; height: 100vh; }
 
         .header { text-align: center; padding: 12px 0; background: white; border-bottom: 1px solid #ddd; flex-shrink: 0; }
         h2 { font-size: 1.1rem; margin: 0; color: var(--dark); text-transform: uppercase; letter-spacing: 1.5px; }
 
+        /* MENU SECTION: Fills the top 30% to 100% of space dynamically */
         .menu-section { flex: 1; overflow-y: auto; padding: 15px; -webkit-overflow-scrolling: touch; }
         .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 500px; margin: 0 auto; }
         
@@ -21,16 +22,17 @@
         .item-btn:active { background: #e8f5e9; transform: scale(0.96); }
         .price-tag { color: var(--primary); font-size: 0.95rem; margin-top: 5px; }
 
-        /* Updated Footer with guaranteed Bottom Padding */
+        /* BILL SECTION: Capped at 70% of the screen */
         .footer-receipt { 
             background: white; 
             border-top: 4px solid var(--primary); 
-            padding: 15px 15px 0 15px; /* Bottom padding handled by inner spacer */
+            padding: 15px; 
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 20px);
             box-shadow: 0 -8px 25px rgba(0,0,0,0.15); 
             flex-shrink: 0; 
             display: flex; 
             flex-direction: column; 
-            max-height: 65vh; 
+            max-height: 65vh; /* Updated to 70% of Viewport Height */
         }
         
         #bill-list { overflow-y: auto; flex-grow: 1; margin-bottom: 12px; }
@@ -54,13 +56,6 @@
         .btn { padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
         .clear-btn { background: #eaeded; color: #566573; }
         .share-btn { background: var(--dark); color: white; }
-
-        /* This is the spacer that creates the "Safe Zone" at the very bottom */
-        .bottom-spacer { 
-            height: 35px; /* Adjust this number to push buttons higher or lower */
-            height: max(35px, env(safe-area-inset-bottom)); 
-            width: 100%;
-        }
     </style>
 </head>
 <body>
@@ -72,7 +67,7 @@
         <div class="menu-grid">
             <button class="item-btn" onclick="addItem('Alfaham Quarter', 160)">Alfaham Quarter <span class="price-tag">₹160</span></button>
             <button class="item-btn" onclick="addItem('Shawarma Roll', 130)">Shawarma Roll <span class="price-tag">₹130</span></button>
-            <button class="item-btn" onclick="addItem('Brosted Chicken(2Pc)', 180)">Brosted Chicken(2Pc) <span class="price-tag">₹180</span></button>
+            <button class="item-btn" onclick="addItem('Broasted Chicken(2Pc)', 180)">Broasted Chicken(2Pc) <span class="price-tag">₹180</span></button>
             <button class="item-btn" onclick="addItem('Chicken Biriyani', 180)">Chicken Biriyani <span class="price-tag">₹180</span></button>
             <button class="item-btn" onclick="addItem('Ghee Rice/Beef', 200)">Ghee Rice/Beef <span class="price-tag">₹200</span></button>
             <button class="item-btn" onclick="addItem('Paal Kappa', 80)">Paal Kappa <span class="price-tag">₹80</span></button>
@@ -95,6 +90,83 @@
             <button class="btn clear-btn" onclick="resetOrder()">RESET</button>
             <button class="btn share-btn" onclick="shareOrder()">SHARE</button>
         </div>
-        <div class="bottom-spacer"></div>
     </div>
 </div>
+
+<script>
+    let cart = {};
+
+    function addItem(name, price) {
+        if (cart[name]) { cart[name].qty += 1; } 
+        else { cart[name] = { price: price, qty: 1 }; }
+        renderBill();
+    }
+
+    function updateQty(name, val) {
+        let newQty = parseFloat(val);
+        if (isNaN(newQty) || newQty <= 0) { delete cart[name]; } 
+        else { cart[name].qty = newQty; }
+        renderBill();
+    }
+
+    function decreaseItem(name) {
+        if (cart[name].qty > 1) { cart[name].qty -= 1; } 
+        else { delete cart[name]; }
+        renderBill();
+    }
+
+    function renderBill() {
+        const listElement = document.getElementById('bill-list');
+        const totalElement = document.getElementById('total-display');
+        listElement.innerHTML = '';
+        let total = 0;
+        
+        for (const name in cart) {
+            const itemTotal = cart[name].price * cart[name].qty;
+            total += itemTotal;
+            const div = document.createElement('div');
+            div.className = 'bill-item';
+            div.innerHTML = `
+                <div class="qty-container">
+                    <button class="control-btn plus-btn" onclick="addItem('${name}', ${cart[name].price})">＋</button>
+                    <input type="number" step="0.5" class="qty-input" value="${cart[name].qty}" onchange="updateQty('${name}', this.value)">
+                    <button class="control-btn minus-btn" onclick="decreaseItem('${name}')">－</button>
+                </div>
+                <div class="item-label">${name}</div>
+                <div class="item-price-total">₹${itemTotal.toFixed(0)}</div>
+            `;
+            listElement.appendChild(div);
+        }
+        totalElement.innerText = `₹${total.toFixed(0)}`;
+        listElement.scrollTop = listElement.scrollHeight;
+    }
+
+    function resetOrder() {
+        if(Object.keys(cart).length > 0 && confirm("Clear current order?")) {
+            cart = {};
+            renderBill();
+        }
+    }
+
+    async function shareOrder() {
+        if(Object.keys(cart).length === 0) return alert("Add items first!");
+        let total = 0;
+        let text = "*--- ORDER BILL ---*\n";
+        for (const name in cart) {
+            const itemTotal = cart[name].price * cart[name].qty;
+            total += itemTotal;
+            text += `${cart[name].qty}x ${name}: ₹${itemTotal.toFixed(0)}\n`;
+        }
+        text += `\n*TOTAL: ₹${total.toFixed(0)}*`;
+        if (navigator.share) {
+            try { await navigator.share({ text: text }); } catch (err) { copyToClipboard(text); }
+        } else { copyToClipboard(text); }
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => alert("Copied!"));
+    }
+</script>
+
+</body>
+</html>
