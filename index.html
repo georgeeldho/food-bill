@@ -34,6 +34,11 @@
             flex-direction: column; 
             max-height: 65vh; /* Updated to 70% of Viewport Height */
         }
+        .bottom-buffer {
+            height: 30px; /* Adjust this value (e.g., 40px or 50px) to increase the gap */
+            width: 100%;
+            flex-shrink: 0;
+        }
         
         #bill-list { overflow-y: auto; flex-grow: 1; margin-bottom: 12px; }
         
@@ -90,6 +95,7 @@
             <button class="btn clear-btn" onclick="resetOrder()">RESET</button>
             <button class="btn share-btn" onclick="shareOrder()">SHARE</button>
         </div>
+        <div class="bottom-buffer"></div>
     </div>
 </div>
 
